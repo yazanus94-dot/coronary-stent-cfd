@@ -1,0 +1,85 @@
+{
+  "poiseuille": [
+    {
+      "grid": "20x8",
+      "dp": 58.866454540424286,
+      "dp_error_pct": 7.119989389304076,
+      "u_center": 0.33470884283837476,
+      "u_center_error_pct": 1.4201085856956979,
+      "iterations": 32,
+      "mass_residual": 1.70150113277894e-13,
+      "wall_s": 0.17520499999955064
+    },
+    {
+      "grid": "40x14",
+      "dp": 61.32269244890233,
+      "dp_error_pct": 3.244515576877152,
+      "u_center": 0.33795800764799355,
+      "u_center_error_pct": 0.46315055792686677,
+      "iterations": 50,
+      "mass_residual": 1.063249741038491e-12,
+      "wall_s": 0.982629199999792
+    },
+    {
+      "grid": "80x28",
+      "dp": 62.45369935696836,
+      "dp_error_pct": 1.460002912711089,
+      "u_center": 0.3391877504944082,
+      "u_center_error_pct": 0.10096139304241378,
+      "iterations": 34,
+      "mass_residual": 1.1962468064459063e-12,
+      "wall_s": 2.5019680999976117
+    }
+  ],
+  "womersley": {
+    "grid": "40x14",
+    "dt_s": 0.002,
+    "cycles": 3,
+    "steps": 1200,
+    "u_center_range": [
+      -0.027160608467845293,
+      0.5139217334006266
+    ],
+    "periodicity_last_cycle_endpoints": 0.005424153588726888,
+    "flow_reversal": true,
+    "wall_s": 66.63677989999996
+  },
+  "stenosis": [
+    {
+      "severity": 0.5,
+      "dp_solver": 240.42464279825126,
+      "dp_straight_baseline": 190.13710534711757,
+      "dp_excess_solver": 50.28753745113369,
+      "dp_young_tsai": 56.93213012933488,
+      "ratio_to_correlation": 0.8832892311756749,
+      "iterations": 55,
+      "wall_s": 5.064606799998728
+    },
+    {
+      "severity": 0.7,
+      "dp_solver": 399.2976215208972,
+      "dp_straight_baseline": 190.13710534711757,
+      "dp_excess_solver": 209.16051617377965,
+      "dp_young_tsai": 219.82474742848598,
+      "ratio_to_correlation": 0.9514875764468892,
+      "iterations": 52,
+      "wall_s": 4.78164029999607
+    }
+  ],
+  "gci": {
+    "quantity": "dp (Pa), straight tube",
+    "values": [
+      58.866454540424286,
+      61.32269244890233,
+      62.45369935696836
+    ],
+    "r": 2.0,
+    "p": 1.1188425641390405,
+    "f_exact": 63.41894739726878,
+    "gci_fine_pct": 1.931927272200746,
+    "gci_coarse_pct": 4.195618053753771,
+    "monotonic": true
+  },
+  "total_wall_s": 80.14566510000441,
+  "accept": true
+}

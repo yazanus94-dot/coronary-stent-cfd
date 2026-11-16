@@ -1,0 +1,4 @@
+#!/bin/sh
+cd "$(dirname "$0")" || exit 1
+foamRun -solver incompressibleFluid | tee log.foamRun
+postProcess -func wallShearStress -latestTime | tee log.post

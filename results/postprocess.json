@@ -1,0 +1,49 @@
+{
+  "cases": [
+    {
+      "severity": 0.5,
+      "dp_steady": 240.42464279825126,
+      "dp_young_tsai": 56.93213012933488,
+      "u_center_max_steady": 0.5475193107234838,
+      "wss_steady_max": 7.134617024289464,
+      "wss_steady_throat": 7.134617024289464,
+      "tawss_max": 7.828218911452918,
+      "osi_max": 0.03753968848185668,
+      "rrt_max": 2.870233728129274,
+      "transient_grid": "60x12",
+      "transient_dt_s": 0.002
+    },
+    {
+      "severity": 0.7,
+      "dp_steady": 399.2976215208972,
+      "dp_young_tsai": 219.82474742848598,
+      "u_center_max_steady": 0.814651420482593,
+      "wss_steady_max": 18.68793246483043,
+      "wss_steady_throat": 18.68793246483043,
+      "tawss_max": 19.01010133343577,
+      "osi_max": 0.3000016660930283,
+      "rrt_max": 6.335242029466021,
+      "transient_grid": "60x12",
+      "transient_dt_s": 0.002
+    }
+  ],
+  "stent_effect": {
+    "model": "protrusion multiplier 1 + 2h/Dr (documented estimate)",
+    "wss_max_clean": 18.68793246483043,
+    "wss_max_stented": 21.611589898774437,
+    "tawss_ratio_throat": 1.1564462756619094
+  },
+  "openfoam_cross_check": {
+    "status": "TBD",
+    "note": "Run the OpenFOAM case in Docker (docker compose run openfoam) and drop the extracted dp / WSS into results/openfoam_results.csv."
+  },
+  "figures": [
+    "steady_sev50.png",
+    "steady_sev70.png",
+    "stent_wss_70.png",
+    "tawss_sev50.png",
+    "tawss_sev70.png",
+    "transient_sev50.png",
+    "transient_sev70.png"
+  ]
+}

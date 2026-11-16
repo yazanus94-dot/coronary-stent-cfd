@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package
+        run: pip install -e .[dev]
+
+      - name: Lint
+        run: ruff check src tests
+
+      - name: Unit tests
+        run: pytest tests -q
+
+      - name: Quick V&V suite (small grids)
+        run: stent-hemo validate --quick
+
+  openfoam-crosscheck:
+    runs-on: ubuntu-latest
+    container:
+      image: openfoam/openfoam11-paraview510
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate cases
+        run: |
+          python3 -m pip install --quiet numpy scipy matplotlib
+          python3 -m pip install --quiet -e . --no-deps
+          stent-hemo cases
+      - name: Run wedge cases
+        run: |
+          source /opt/openfoam11/etc/bashrc
+          for c in openfoam/stenosis_*; do
+            (cd "$c" && bash Allrun)
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openfoam-results
+          path: openfoam/**/postProcessing/

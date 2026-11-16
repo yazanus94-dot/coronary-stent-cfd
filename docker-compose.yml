@@ -1,0 +1,18 @@
+services:
+  study:
+    build: .
+    image: coronary-stent-cfd:latest
+    command: ["bash", "-lc", "stent-hemo all"]
+    volumes:
+      - ./results:/work/results
+      - ./openfoam:/work/openfoam
+      - ./su2:/work/su2
+      - ./calculix:/work/calculix
+
+  openfoam:
+    build: .
+    image: coronary-stent-cfd:latest
+    command: ["run_openfoam"]
+    volumes:
+      - ./results:/work/results
+      - ./openfoam:/work/openfoam
