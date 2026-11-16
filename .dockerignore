@@ -1,0 +1,36 @@
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.so
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project-specific artifacts / scratch
+tmp_of_check/
+.ipynb_checkpoints/
+
+# Per-run results logs (not committed)
+results/*_results.csv
