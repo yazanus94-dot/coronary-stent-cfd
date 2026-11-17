@@ -60,7 +60,7 @@ def write_gmsh(grid: StructGrid, path: str | Path) -> Path:
     lines.append(f"$Elements\n{len(quads) + 2 * (nz + nr)}")
     eid = 1
     # volume (surface in 2D) quads: physical 1
-    for j, k, n in quads:
+    for _j, _k, n in quads:
         lines.append(f"{eid} 3 1 1 {' '.join(map(str, n))}")
         eid += 1
     # inlet (j=0), outlet (j=nz), wall (k=nr) line elements
@@ -166,8 +166,6 @@ def write_openfoam_polymesh(grid: StructGrid, case_dir: str | Path) -> Path:
     for th in (-half, half):  # plane 0: back, plane 1: front
         for z, r in pts:
             points.append(xyz(z, r, th))
-    n_back = npz
-
     def pid(i: int, k: int, plane: int) -> int:
         return plane * npz + idx[i, k]
 

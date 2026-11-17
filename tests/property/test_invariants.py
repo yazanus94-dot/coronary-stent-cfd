@@ -8,13 +8,12 @@ Tests physics invariants over random valid inputs for the stenosis hemodynamics 
 
 from __future__ import annotations
 
-from hypothesis import given, strategies as st
-from hypothesis import settings
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from stent_hemo.core import BloodProperties, FlowWaveform, VesselGeometry
 from stent_hemo.hand_calc import flow_hand_calc
 from stent_hemo.young_tsai import stenosis_pressure_drop
-
 
 # Strategies for valid physical inputs
 severity_strategy = st.floats(min_value=0.0, max_value=0.9, allow_nan=False)

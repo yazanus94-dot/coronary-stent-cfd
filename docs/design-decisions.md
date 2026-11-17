@@ -4,20 +4,18 @@ Key engineering trade-offs made during the development of Coronary-Stent-CFD.
 
 ## D1 — Structure over raw speed
 
-**Decision:** Use typed dataclasses and a structured loss/object API instead
-of flat arithmetic.
+**Decision:** Use typed dataclasses and a structured solver API instead of
+flat arithmetic.
 
-**Rationale:** The entire engineering sweep (coupling + efficiency + derating)
-completes in under 10 ms, so model clarity and auditability of every term
-dominate runtime. The structured API costs ~5.7 µs/call vs ~2.3 ns/call for
-raw arithmetic — acceptable for an engineering tool where every number must
-be traceable.
+**Rationale:** The production steady solve completes in ~5 s and the full
+V&V suite in ~80 s, so model clarity and auditability of every term dominate
+runtime. The structured API costs little and keeps every number traceable.
 
 ## D2 — Analytic fallback vs hard tool requirement
 
 **Decision:** Every number the pure-Python core produces is a real run of a
-real closed-form model. Simulator-only numbers (OpenFOAM, SU2, Elmer) are
-honestly marked TBD rather than fabricated.
+real closed-form or numerically solved model. Simulator-only numbers
+(OpenFOAM, SU2) are honestly marked TBD rather than fabricated.
 
 **Rationale:** Reproducibility matters more than appearing complete. A user
 can run the full pipeline on any machine with just Python + NumPy/SciPy and
@@ -61,7 +59,7 @@ structured (z,r) grid used by the in-house solver is the primary mesh.
 OpenFOAM cross-check uses a 5-degree wedge sector with real prism layers via
 snappyHexMesh addLayers (documented follow-up).
 
-## D7 — One shared SPICE-style netlist pattern
+## D7 — One shared grid for all external solvers
 
 **Decision:** OpenFOAM and SU2 cases are generated from the same grid and
 parameters, ensuring cross-simulator consistency isolates the solver, not the

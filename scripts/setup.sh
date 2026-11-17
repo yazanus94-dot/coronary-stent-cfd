@@ -16,5 +16,5 @@ pip install --upgrade pip
 pip install -e .[dev]
 
 echo "[setup] Done. Run the pipeline with:"
-echo "  python -m stent_hemo pipeline all"
+echo "  python -m stent_hemo.pipeline all"
 echo "  pytest tests -q"

@@ -41,6 +41,9 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
+# E501: long f-string templates for generated solver decks; UP031: legacy
+# % templates kept for byte-exact OpenFOAM/SU2 file conventions.
+ignore = ["E501", "UP031"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

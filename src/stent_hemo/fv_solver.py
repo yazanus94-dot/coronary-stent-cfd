@@ -95,7 +95,6 @@ class AxisymSolver:
     # ------------------------------------------------------------------
     def _geom(self) -> None:
         g = self.grid
-        v: VesselGeometry = g.vessel
         self.rc = g.r_center  # (nz,) column radii at cell centers
         self.rf = g.r_face  # (nz+1,) radii at axial faces
         f = g.r_frac  # (nr+1,)
@@ -317,13 +316,13 @@ class AxisymSolver:
                          0.5 * (mu_u[j, k - 1] + mu_u[j, k])
                          * self.azv_lo[j][k - 1] / self.dz, None)
                 else:  # j == 0: inlet, convected v = 0 (Dirichlet)
-                    uf = 0.5 * (u[0, k - 1] + u[0, k])
-                    f = -self.blood.rho * uf * self.azv_lo[0][k - 1]
                     # face at z=0, unknown at zc_0: distance dz/2
                     df = (mu_u[0, k - 1] + mu_u[0, k]) * self.azv_lo[0][k - 1] / self.dz
                     diag[ip] += df  # upwind value is the boundary -> no diag conv
                 # pressure driving
-                b[ip] += -(p[j, k] - p[j, k - 1]) / self.drv[j][k - 1] * self.vv[j][k - 1]
+                b[ip] += (
+                    -(p[j, k] - p[j, k - 1]) / self.drv[j][k - 1] * self.vv[j][k - 1]
+                )
         if dt is not None and v_old is not None:
             coeff = self.blood.rho * self.vv / dt
             diag += coeff.ravel()

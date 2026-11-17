@@ -112,7 +112,6 @@ def harmonic_pressure_gradient(
     k=0 (steady Poiseuille) component first.
     """
     r0 = vessel.r0
-    a0 = vessel.a0
     mu = blood.mu_newtonian
     rho = blood.rho
 

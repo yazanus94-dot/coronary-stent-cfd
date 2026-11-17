@@ -73,7 +73,6 @@ def run_validation(
     sol = solver.solve(wf, steady=False, dt=2e-3, n_cycles=3)
     hist = sol.u_history
     assert hist is not None and len(hist) >= 2
-    n_per = hist.shape[0]
     periodicity = float(np_maxabs(hist[0], hist[-1]))
     out["womersley"] = {
         "grid": "40x14",
@@ -128,7 +127,7 @@ def run_validation(
         }
 
     out["total_wall_s"] = time.perf_counter() - t_start
-    ok = accept(out)
+    ok = accept(out, tol_dp_pct=10.0 if quick else 5.0)
     out["accept"] = ok
 
     (results_dir / "validation.json").write_text(
@@ -146,13 +145,16 @@ def np_maxabs(a, b) -> float:
     return float(np.abs(np.asarray(a) - np.asarray(b)).max())
 
 
-def accept(out: dict[str, Any]) -> bool:
-    """Project acceptance criteria (documented in docs/)."""
+def accept(out: dict[str, Any], tol_dp_pct: float = 5.0) -> bool:
+    """Project acceptance criteria (documented in docs/).
+
+    ``tol_dp_pct`` is loosened for quick smoke runs (coarse grid only).
+    """
     pois = out["poiseuille"]
     if not pois:
         return False
     finest = pois[-1]
-    if finest["dp_error_pct"] > 5.0:  # straight-tube dp on the fine grid
+    if finest["dp_error_pct"] > tol_dp_pct:
         return False
     if out["womersley"].get("periodicity_last_cycle_endpoints", 1e9) > 0.05:
         return False

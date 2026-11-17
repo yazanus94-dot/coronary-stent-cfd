@@ -4,7 +4,7 @@
 
 Coronary-Stent-CFD is a local scientific computing pipeline. It performs no
 network access, executes no user-supplied code, and writes only to
-`results/`, `kicad/`, `cad/`, `mesh/`.
+`results/`, `openfoam/`, `su2/`, `calculix/`, `cad/`, `mesh/`.
 
 ## Security boundaries
 
@@ -20,7 +20,8 @@ network access, executes no user-supplied code, and writes only to
   invoked with explicit argument lists (no shell interpolation). Subprocess
   timeouts (300–600 s) prevent runaway solves.
 - **File writes confined:** Outputs are written only to `results/`,
-  `kicad/`, `cad/`, `mesh/`. No writes to system directories or home.
+  `openfoam/`, `su2/`, `calculix/`, `cad/`, `mesh/`. No writes to system
+  directories or home.
 
 ## Known limitations
 

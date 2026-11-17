@@ -2,16 +2,11 @@
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
-import pytest
 
-from stent_hemo.core import BloodProperties, FlowWaveform, VesselGeometry
 from stent_hemo.fv_solver import AxisymSolver
 from stent_hemo.struct_grid import StructGrid
 from stent_hemo.validation import run_validation
-
 
 # ---- solver integration ------------------------------------------------
 

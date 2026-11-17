@@ -6,10 +6,10 @@ This directory is reserved for project images and diagrams.
 
 | Image | Purpose | Status |
 |-------|---------|--------|
-| `architecture.png` | System architecture diagram | ⏳ TBD |
-| `test-results.png` | Pytest results screenshot | ⏳ TBD |
-| `coverage.png` | Coverage report | ⏳ TBD |
-| `workflow.png` | CI/CD workflow diagram | ⏳ TBD |
+| `architecture.png` | System architecture diagram | Done |
+| `test-results.png` | Pytest results screenshot | TBD |
+| `coverage.png` | Coverage report | TBD |
+| `workflow.png` | CI/CD workflow diagram | TBD |
 
 ## How to add images
 
@@ -20,5 +20,4 @@ This directory is reserved for project images and diagrams.
 
 ## Current status
 
-No images committed yet. The architecture diagram in
-`docs/architecture.md` is provided as a Mermaid diagram (renders on GitHub).
+- `architecture.png` — generated (Mermaid render of the module diagram).

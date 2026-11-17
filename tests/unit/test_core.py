@@ -7,13 +7,12 @@ import math
 import numpy as np
 import pytest
 
-from stent_hemo.core import BloodProperties, FlowWaveform, StentParams, VesselGeometry
+from stent_hemo.core import StentParams, VesselGeometry
 from stent_hemo.fv_solver import harmonic_inlet_profile
 from stent_hemo.hand_calc import flow_hand_calc
 from stent_hemo.mesh_io import write_gmsh, write_su2
 from stent_hemo.struct_grid import StructGrid
 from stent_hemo.young_tsai import stenosis_pressure_drop
-
 
 # ---- geometry ---------------------------------------------------------
 
@@ -120,7 +119,6 @@ def test_steady_poiseuille_small_grid(grid_coarse, wf, blood):
 
 def test_transient_inlet_harmonic_periodicity(grid_coarse, wf, blood):
     """Inlet profile at t and t+T must match (shape, values)."""
-    from stent_hemo.fv_solver import harmonic_inlet_profile
 
     f = grid_coarse.r_frac
     rmid = 0.5 * (f[:-1] + f[1:])

@@ -117,7 +117,6 @@ def mesh_vessel(
         gmsh.model.mesh.field.setNumber(f_wall_t, "DistMax", 2.0 * vessel.r0)
 
         # --- size field 2: stenosis/stent region refinement
-        x0, x1 = 0.30 * vessel.length, 0.62 * vessel.length
         f_dist2 = gmsh.model.mesh.field.add("Distance")
         gmsh.model.mesh.field.setNumbers(f_dist2, "SurfacesList", wetted)
         f_throat = gmsh.model.mesh.field.add("Threshold")

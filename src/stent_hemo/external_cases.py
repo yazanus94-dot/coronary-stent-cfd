@@ -359,7 +359,7 @@ def write_calculix_inp(
     ys = np.sin(np.pi * xs / span) * (stent.ring_pitch * 0.25)
     lines = ["*HEADING", "Stent strut expansion - simplified beam model"]
     lines.append("*NODE, NSET=NNODE")
-    for i, (x, y) in enumerate(zip(xs, ys), 1):
+    for i, (x, y) in enumerate(zip(xs, ys, strict=False), 1):
         lines.append(f"{i}, {x:.6g}, {y:.6g}, 0.0")
     lines.append("*ELEMENT, TYPE=B31, ELSET=ESTRUT")
     for i in range(1, n_el + 1):
