@@ -6,7 +6,14 @@ results can be cross-checked in Docker (openfoam/openfoam11-paraview510)
 or locally:
 
 * ``write_openfoam_case`` - OpenFOAM Foundation v11 wedge case
-  (``foamRun -solver incompressibleFluid``, BirdCarreau blood).
+  (``foamRun -solver incompressibleFluid``). The pulsatile coronary
+  inlet waveform is implemented via the standard
+  ``timeVaryingMappedFixedValue`` boundary condition and
+  ``constant/boundaryData/<patch>`` data files
+  (``write_boundary_data``). ``viscosityModel Newtonian`` is used
+  because v11's ``incompressibleFluid`` solver supports only
+  Newtonian/constant viscosity (BirdCarreau is available to ``pimpleFluid``
+  via MomentumTransportModels, and is used by the in-house FV solver).
 * ``write_su2_cfg`` - SU2 incompressible 2-D axisymmetric config.
 * ``write_calculix_inp`` - CalculiX stent-strut structural model (beams).
 
@@ -30,6 +37,59 @@ _OPENFOAM_HEADER = r"""/*--------------------------------*- C++ -*--------------
 """
 
 
+def write_boundary_data(
+    grid: StructGrid,
+    wf: FlowWaveform,
+    case_dir: Path,
+    end: float = 3.0,
+    dt: float = 0.25,
+) -> Path:
+    """Write ``constant/boundaryData/inlet`` for timeVaryingMappedFixedValue.
+
+    Layout (OpenFOAM standard):
+      - ``points``   - raw pointField list of sample points;
+      - ``<time>/U`` - raw Field<vector> with the coronary waveform inlet
+                       velocity u(t) (Q(t)/A_inlet) at every sample point,
+                       for times [0, end].
+
+    ``timeVaryingMappedFixedValue`` linearly interpolates between sample
+    times, so the BC implements the pulsatile coronary waveform.
+
+    The sample points are a small 2-D rectangle on the inlet plane. They
+    need not coincide with the patch (all waveform values are uniform),
+    but their first three points must NOT be collinear, or
+    ``pointToPointPlanarInterpolation::calcCoordinateSystem`` divides by a
+    zero normal and the run aborts.
+    """
+    r0 = grid.vessel.r0
+    y_min, y_max = -0.15 * r0, 1.15 * r0
+    zw = 0.02 * r0
+    n_cols = 12
+    points = []
+    for i in range(n_cols):
+        y = y_min + (y_max - y_min) * i / (n_cols - 1)
+        points.append((0.0, y, -zw))
+        points.append((0.0, y, +zw))
+    area = math.pi * r0**2
+
+    bd = Path(case_dir) / "constant" / "boundaryData" / "inlet"
+    bd.mkdir(parents=True, exist_ok=True)
+    lines = [f"{len(points)}\n(\n"]
+    lines += [f"({x:.9e} {y:.9e} {z:.9e})\n" for (x, y, z) in points]
+    lines.append(")\n")
+    (bd / "points").write_text("".join(lines), encoding="utf-8")
+
+    n = int(round(end / dt)) + 1
+    for i in range(n):
+        t = i * dt
+        u = wf.flow(t) / area
+        d = bd / f"{t:g}"
+        d.mkdir(parents=True, exist_ok=True)
+        body = "\n".join(f"({u:.8e} 0 0)" for _ in points)
+        (d / "U").write_text(f"{len(points)}\n(\n{body}\n)\n", encoding="utf-8")
+    return bd
+
+
 def write_openfoam_case(
     grid: StructGrid,
     blood: BloodProperties,
@@ -38,6 +98,12 @@ def write_openfoam_case(
 ) -> Path:
     """Write a complete OpenFOAM v11 wedge case (polyMesh + settings).
 
+    The inlet uses the standard ``timeVaryingMappedFixedValue`` boundary
+    condition driven by the coronary waveform data files written by
+    ``write_boundary_data`` (3 cycles, dt = 0.25 s), so the pulsatile
+    waveform advertised in the study is implemented. ``viscosityModel
+    Newtonian`` is used because v11's ``incompressibleFluid`` solver
+    supports only Newtonian/constant viscosity.
     Run inside the official image with:
         foamRun -solver incompressibleFluid
     """
@@ -62,7 +128,7 @@ def write_openfoam_case(
 application     foamRun;
 solver          incompressibleFluid;
 startFrom       latestTime;
-endTime         {1.5 * wf.period:.6g};
+endTime         {3 * wf.period:.6g};
 deltaT          {wf.period / 800:.6g};
 writeControl    timeStep;
 writeInterval   100;
@@ -173,11 +239,8 @@ PIMPLE
     class dictionary;
     object physicalProperties;
 }}
-viscosityModel  BirdCarreau;
-nuInf           {blood.mu_inf / blood.rho:.6g};
-nu0             {blood.mu0 / blood.rho:.6g};
-k               {blood.lam:.6g};
-n               {blood.n:.6g};
+viscosityModel  Newtonian;
+nu              {blood.mu_newtonian / blood.rho:.10g};
 rho             {blood.rho:.6g};
 """,
         encoding="utf-8",
@@ -210,8 +273,8 @@ boundaryField
 {{
     inlet
     {{
-        type            uniformFixedValue;
-        uniformValue    constant ({u_mean:.6g} 0 0);
+        type            timeVaryingMappedFixedValue;
+        value           uniform ({u_mean:.6g} 0 0);
     }}
     outlet
     {{
@@ -233,6 +296,9 @@ boundaryField
 """,
         encoding="utf-8",
     )
+
+    # Pulsatile coronary inlet waveform data (timeVaryingMappedFixedValue).
+    write_boundary_data(grid, wf, case_dir)
 
     (case_dir / "0" / "p").write_text(
         _OPENFOAM_HEADER

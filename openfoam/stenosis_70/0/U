@@ -13,8 +13,8 @@ boundaryField
 {
     inlet
     {
-        type            uniformFixedValue;
-        uniformValue    constant (0.169765 0 0);
+        type            timeVaryingMappedFixedValue;
+        value           uniform (0.169765 0 0);
     }
     outlet
     {

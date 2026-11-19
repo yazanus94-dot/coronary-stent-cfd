@@ -11,25 +11,26 @@ Pulsatile, shear-thinning blood flow in a stenosed artery (50 % and 70 % area st
 
 ## 1. Project Overview
 
-**Problem solved:** Blood flow through a stenosed coronary artery creates complex hemodynamic patterns â€” elevated wall shear stress at the throat, flow separation downstream, and oscillatory shear that correlates with plaque progression and stent failure. A stent props the vessel open but introduces strut-induced flow disturbance. Quantifying these effects requires coupled fluid-structure analysis across multiple simulation tools.
+**Problem solved:** Blood flow through a stenosed coronary artery creates complex hemodynamic patterns — elevated wall shear stress at the throat, flow separation downstream, and oscillatory shear that correlates with plaque progression and stent failure. A stent props the vessel open but introduces strut-induced flow disturbance. Quantifying these effects requires coupled fluid-structure analysis across multiple simulation tools.
 
 **Why it is challenging:** The answer requires coupled physics (pulsatile Navier-Stokes + non-Newtonian Carreau blood rheology), grid-convergence verification (GCI), cross-validation between independent solvers (in-house FV vs OpenFOAM vs SU2), a parametric stent geometry (CadQuery STEP), and a reproducible Docker environment.
 
-**Engineering solution:** A one-command reproducible pipeline: analytic hand calculations as ground truth â†’ axisymmetric SIMPLE FV solver â†’ Poiseuille/Womersley/Young-Tsai/GCI validation â†’ CadQuery STEP geometry â†’ Gmsh/SU2/OpenFOAM mesh writers â†’ post-processing with WSS/TAWSS/OSI metrics â†’ results and figures. Every external tool is auto-detected and gracefully skipped when not installed.
+**Engineering solution:** A one-command reproducible pipeline: analytic hand calculations as ground truth → axisymmetric SIMPLE FV solver → Poiseuille/Womersley/Young-Tsai/GCI validation → CadQuery STEP geometry → Gmsh/SU2/OpenFOAM mesh writers → post-processing with WSS/TAWSS/OSI metrics → results and figures. Every external tool is auto-detected and gracefully skipped when not installed.
 
 ## 2. Key Results
 
 | Case | dp steady (Pa) | Young-Tsai excess (Pa) | WSS max (Pa) | OSI max |
 |------|----------------|------------------------|--------------|---------|
-| 50 % stenosis | 240.4 | 56.9 (solver excess 50.3, ratio 0.88) | 7.13 | 0.04 |
-| 70 % stenosis | 399.3 | 219.8 (solver excess 209.2, ratio 0.95) | 18.69 | 0.30 |
+| 50 % stenosis | 240.9 | 56.9 (solver excess 50.8, ratio 0.89) | 7.85 | 0.13 |
+| 70 % stenosis | 401.3 | 219.8 (solver excess 211.2, ratio 0.96) | 20.07 | 0.23 |
 
-- Straight-tube verification: dp error 1.4 % on the fine grid; centerline
-  velocity error 0.1 %; GCI fine-grid 1.9 % (monotonic).
+- Straight-tube verification: dp error 1.55 % on the fine grid; centerline
+  velocity error 0.09 %; GCI fine-grid 2.16 % (monotonic).
 - Transient Womersley flow (3 cycles, dt = 2 ms): capture of flow reversal
-  (u_center range âˆ’0.027 to 0.514 m/s), periodic within 1 %.
-- Stent effect (documented protrusion estimate): WSS max 18.69 â†’ 21.61 Pa at
-  the 70 % throat.
+  (u_center range −0.028 to 0.517 m/s), phase-matched periodicity 2e-15
+  (the last two stored cycles agree exactly at identical phases).
+- Stent effect (geometry-derived protrusion estimate): WSS max 20.07 →
+  23.21 Pa at the 70 % throat.
 
 ## 3. Key Features
 
@@ -37,9 +38,9 @@ Pulsatile, shear-thinning blood flow in a stenosed artery (50 % and 70 % area st
 - Non-Newtonian Carreau blood rheology with outer viscosity iteration
 - Analytic anchors: Poiseuille, Womersley, Young-Tsai pressure-drop correlation
 - Grid Convergence Index (Roache) verification with monotonic convergence
-- CadQuery parametric stent geometry (lumen, wall, stent, stented lumen â†’ STEP + SVG)
+- CadQuery parametric stent geometry (lumen, wall, stent, stented lumen → STEP + SVG)
 - Gmsh, SU2, and OpenFOAM 5-degree wedge polyMesh writers
-- OpenFOAM v11 cross-check cases in Docker
+- OpenFOAM v11 cross-check cases in Docker (pulsatile coronary inlet implemented via the standard `timeVaryingMappedFixedValue` BC + generated `constant/boundaryData/inlet` data files; v11's `incompressibleFluid` uses the Newtonian baseline viscosity — the in-house FV solver uses Carreau)
 - CalculiX stent-strut structural beam model
 - WSS / TAWSS / OSI / RRT post-processing with figures
 - One-command pipeline: `python -m stent_hemo.pipeline all`
@@ -114,47 +115,47 @@ flowchart TD
 
 ```
 Coronary-Stent-CFD/
-â”œâ”€â”€ README.md, LICENSE, CONTRIBUTING.md, CHANGELOG.md
-â”œâ”€â”€ pyproject.toml          # package + Ruff + pytest config
-â”œâ”€â”€ requirements.txt        # pip dependencies
-â”œâ”€â”€ Dockerfile, docker-compose.yml, .dockerignore
-â”œâ”€â”€ scripts/setup.sh        # venv + install
-â”œâ”€â”€ scripts/run_tests.sh    # lint + test + validate
-â”œâ”€â”€ src/stent_hemo/         # the engineering library
-â”‚   â”œâ”€â”€ core.py             # BloodProperties, VesselGeometry, FlowWaveform, StentParams
-â”‚   â”œâ”€â”€ fv_solver.py        # Axisymmetric SIMPLE FV solver (steady + transient)
-â”‚   â”œâ”€â”€ geometry.py         # CadQuery STEP/SVG geometry builder
-â”‚   â”œâ”€â”€ mesh_io.py          # Gmsh / SU2 / OpenFOAM polyMesh writers
-â”‚   â”œâ”€â”€ meshing.py          # Gmsh wall-refined tetrahedral mesher
-â”‚   â”œâ”€â”€ external_cases.py   # OpenFOAM / SU2 / CalculiX case writers
-â”‚   â”œâ”€â”€ validation.py       # Poiseuille / Womersley / Young-Tsai / GCI V&V suite
-â”‚   â”œâ”€â”€ postprocess.py      # WSS/TAWSS/OSI metrics + results.md + figures
-â”‚   â”œâ”€â”€ pipeline.py         # one-command: mesh / cases / validate / postprocess / all
-â”‚   â”œâ”€â”€ struct_grid.py      # Structured axisymmetric (z, r) grid
-â”‚   â”œâ”€â”€ young_tsai.py       # Stenosis pressure-drop correlation
-â”‚   â”œâ”€â”€ hand_calc.py        # Closed-form hand calculations
-â”‚   â”œâ”€â”€ womersley.py        # Womersley analytic pulsatile solution
-â”‚   â””â”€â”€ gci.py              # Roache grid-convergence index
-â”œâ”€â”€ tests/                  # unit / integration / property
-â”‚   â”œâ”€â”€ conftest.py         # shared fixtures
-â”‚   â”œâ”€â”€ unit/test_core.py
-â”‚   â”œâ”€â”€ integration/test_solver.py
-â”‚   â””â”€â”€ property/test_invariants.py
-â”œâ”€â”€ benchmarks/             # performance benchmarks
-â”‚   â”œâ”€â”€ benchmark.py
-â”‚   â””â”€â”€ results.md
-â”œâ”€â”€ docs/                   # architecture, decisions, debugging, security
-â”‚   â”œâ”€â”€ architecture.md
-â”‚   â”œâ”€â”€ design-decisions.md
-â”‚   â”œâ”€â”€ debugging-log.md
-â”‚   â””â”€â”€ security.md
-â”œâ”€â”€ cad/                    # generated STEP solids + vessel profile SVG
-â”œâ”€â”€ mesh/                   # generated Gmsh + SU2 meshes
-â”œâ”€â”€ openfoam/               # generated OpenFOAM wedge cases (50 %, 70 %)
-â”œâ”€â”€ su2/                    # SU2 configs
-â”œâ”€â”€ calculix/               # CalculiX stent-strut .inp
-â”œâ”€â”€ results/                # validation.json, results.md, figures/*.png
-â””â”€â”€ .github/workflows/ci.yml
+├── README.md, LICENSE, CONTRIBUTING.md, CHANGELOG.md
+├── pyproject.toml          # package + Ruff + pytest config
+├── requirements.txt        # pip dependencies
+├── Dockerfile, docker-compose.yml, .dockerignore
+├── scripts/setup.sh        # venv + install
+├── scripts/run_tests.sh    # lint + test + validate
+├── src/stent_hemo/         # the engineering library
+│   ├── core.py             # BloodProperties, VesselGeometry, FlowWaveform, StentParams
+│   ├── fv_solver.py        # Axisymmetric SIMPLE FV solver (steady + transient)
+│   ├── geometry.py         # CadQuery STEP/SVG geometry builder
+│   ├── mesh_io.py          # Gmsh / SU2 / OpenFOAM polyMesh writers
+│   ├── meshing.py          # Gmsh wall-refined tetrahedral mesher
+│   ├── external_cases.py   # OpenFOAM / SU2 / CalculiX case writers
+│   ├── validation.py       # Poiseuille / Womersley / Young-Tsai / GCI V&V suite
+│   ├── postprocess.py      # WSS/TAWSS/OSI metrics + results.md + figures
+│   ├── pipeline.py         # one-command: mesh / cases / validate / postprocess / all
+│   ├── struct_grid.py      # Structured axisymmetric (z, r) grid
+│   ├── young_tsai.py       # Stenosis pressure-drop correlation
+│   ├── hand_calc.py        # Closed-form hand calculations
+│   ├── womersley.py        # Womersley analytic pulsatile solution
+│   └── gci.py              # Roache grid-convergence index
+├── tests/                  # unit / integration / property
+│   ├── conftest.py         # shared fixtures
+│   ├── unit/test_core.py
+│   ├── integration/test_solver.py
+│   └── property/test_invariants.py
+├── benchmarks/             # performance benchmarks
+│   ├── benchmark.py
+│   └── results.md
+├── docs/                   # architecture, decisions, debugging, security
+│   ├── architecture.md
+│   ├── design-decisions.md
+│   ├── debugging-log.md
+│   └── security.md
+├── cad/                    # generated STEP solids + vessel profile SVG
+├── mesh/                   # generated Gmsh + SU2 meshes
+├── openfoam/               # generated OpenFOAM wedge cases (50 %, 70 %)
+├── su2/                    # SU2 configs
+├── calculix/               # CalculiX stent-strut .inp
+├── results/                # validation.json, results.md, figures/*.png
+└── .github/workflows/ci.yml
 ```
 
 ## 7. Installation and Setup
@@ -230,7 +231,8 @@ stent-hemo validate --quick        # quick V&V suite
 - Stenosis dp / Young-Tsai ratio in [0.5, 2.0]
 - Grid Convergence Index: monotonic, fine-grid GCI < 5 %
 
-**Grid-convergence index (GCI, fine grid): 1.93 %, monotonic convergence.**
+**Grid-convergence index (GCI, fine grid): 2.16 %, monotonic convergence.**
+The full three-grid GCI values are in `results/validation.json` (`gci`).
 
 ## 10. Performance Benchmarking
 
@@ -243,7 +245,7 @@ stent-hemo validate --quick        # quick V&V suite
 | solver_steady_80x28 | 80x28 steady solve | 2.55 s | 2.51 s | 2.65 s |
 | solver_steady_120x24 | 120x24 steady solve | 4.86 s | 4.83 s | 4.93 s |
 | postprocess_full | 50% + 70% + stent effect + figures | 181 s | 180 s | 182 s |
-| validation_quick | Poiseuille + Womersley + stenosis | 75.6 s | â€” | â€” |
+| validation_quick | Poiseuille + Womersley + stenosis | 75.6 s | — | — |
 
 Full table: [`benchmarks/results.md`](benchmarks/results.md).
 
@@ -251,25 +253,25 @@ Full table: [`benchmarks/results.md`](benchmarks/results.md).
 
 Documented in full in [`docs/debugging-log.md`](docs/debugging-log.md). Highlights:
 
-1. **Patankar relaxation formula error** â€” the source term applied
+1. **Patankar relaxation formula error** — the source term applied
    `(1 - relax)/relax * diag * u_guess * relax`, silently shifting the fixed
    point of every momentum solve; converged fields were consistently wrong
    even with tiny residuals. Removing the stray `* relax` restored the exact
    Poiseuille profile on a straight tube.
-2. **Double-assembled matrix coefficients** â€” the matrix-assembly helper was
+2. **Double-assembled matrix coefficients** — the matrix-assembly helper was
    called once per neighbour *and* again when the loop reached the partner
    cell, doubling every interior coefficient (SciPy COO sums duplicates).
    Fixed by assembling only the calling cell's side per visit.
-3. **Inlet/wall Dirichlet double count** â€” boundary convection went into both
+3. **Inlet/wall Dirichlet double count** — boundary convection went into both
    the diagonal and the RHS; only the RHS belongs there for a Dirichlet face.
-4. **v-control-volume geometry** â€” the radial velocity CVs must span
+4. **v-control-volume geometry** — the radial velocity CVs must span
    half-integer ring centers (`(f_k-1+f_k)/2`), not integer ones; the original
    widths made the mass operator and momentum operator inconsistent.
-5. **Transient Courant instability** â€” dt=2 ms is stable on 60x12 but diverges
+5. **Transient Courant instability** — dt=2 ms is stable on 60x12 but diverges
    on 120x24 through the Carreau shear-thinning feedback (throat jet ->
    viscosity drop -> faster jet); fixed with dt <= 1 ms on fine grids and a
    NaN guard in post-processing.
-6. **Richardson-extrapolation sign** â€” `f_exact = f_fine + (f_medium -
+6. **Richardson-extrapolation sign** — `f_exact = f_fine + (f_medium -
    f_fine)/(r^p - 1)` had the wrong sign; the corrected form reproduces the
    analytic Poiseuille dp to 0.06 %.
 
@@ -277,13 +279,13 @@ Documented in full in [`docs/debugging-log.md`](docs/debugging-log.md). Highligh
 
 Full rationale in [`docs/design-decisions.md`](docs/design-decisions.md). Key trade-offs:
 
-- **Structure over raw speed** â€” Typed dataclasses and structured API; clarity dominates when sweeps run in <10 ms.
-- **Analytic fallback vs hard tool requirement** â€” Real closed-form numbers always; simulator-only results honestly marked TBD.
-- **Staggered SIMPLE solver** â€” Checkerboard-free, robust for incompressible flow.
-- **Carreau outer viscosity iteration** â€” Keeps linear systems manageable; documented approximation.
-- **Documented stent effect estimate** â€” Protrusion multiplier `1 + 2h/Dr`, clearly labeled as order-of-magnitude.
-- **Structured grid primary; Gmsh blocked** â€” Gmsh tetrahedral path documented as blocked; structured (z,r) grid is the primary mesh.
-- **One shared grid for all external solvers** â€” Isolates solver differences from model differences.
+- **Structure over raw speed** — Typed dataclasses and structured API; clarity dominates when sweeps run in <10 ms.
+- **Analytic fallback vs hard tool requirement** — Real closed-form numbers always; simulator-only results honestly marked TBD.
+- **Staggered SIMPLE solver** — Checkerboard-free, robust for incompressible flow.
+- **Carreau outer viscosity iteration** — Keeps linear systems manageable; documented approximation.
+- **Geometry-derived protrusion estimate** — Stent WSS effect built from actual strut geometry: protrusion multiplier `1 + 2h/Dr` (h = strut_thickness·(1−embed_frac), Dr = local lumen radius); documented as an estimate, not strut-resolved CFD.
+- **Structured grid primary; Gmsh blocked** — Gmsh tetrahedral path documented as blocked; structured (z,r) grid is the primary mesh.
+- **One shared grid for all external solvers** — Isolates solver differences from model differences.
 
 ## 13. Security Considerations
 
@@ -295,13 +297,14 @@ Full rationale in [`docs/design-decisions.md`](docs/design-decisions.md). Key tr
 
 ## 14. Limitations
 
-- OpenFOAM cross-check results are **TBD** â€” run `docker compose run openfoam` to generate `results/openfoam_results.csv`.
-- Stent effect uses a documented protrusion estimate (`1 + 2h/Dr`), not a resolved 3-D strut CFD-FSI.
+- OpenFOAM cross-check results are **TBD** — run `docker compose run openfoam` to generate `results/openfoam_results.csv`.
+- OpenFOAM wedge cases (`openfoam/stenosis_50`, `openfoam/stenosis_70`) are generated and structurally validated (mesh + boundaryData checks); in this environment execution starts the time loop and aborts at the U-momentum solve — the wedge mesh has degenerate cells (`checkMesh` reports zero/negative cell volumes) — an issue in `write_openfoam_polymesh` (OpenFOAM-specific geometry/winding). CI runs the cases.
+- Stent effect uses a geometry-derived protrusion estimate (`1 + 2h/Dr` from actual strut parameters), not a strut-resolved 3-D CFD-FSI — see [`docs/design-decisions.md`](docs/design-decisions.md) (D5).
 - Gmsh tetrahedral meshing path is blocked; structured (z,r) grid is primary.
 - Core model is Newtonian by default; Carreau shear-thinning via outer iteration.
 - Single operating point (coronary flow ~1.2 mL/s, 75 bpm, 90 mm vessel).
 - No transient thermal, no scaffold degradation, no polymer erosion.
-- Research and education only â€” not a medical device.
+- Research and education only — not a medical device.
 
 ## 15. Future Improvements
 
@@ -320,4 +323,4 @@ Full rationale in [`docs/design-decisions.md`](docs/design-decisions.md). Key tr
 
 ## 16. License
 
-MIT License â€” see [LICENSE](LICENSE).
+MIT License — see [LICENSE](LICENSE).

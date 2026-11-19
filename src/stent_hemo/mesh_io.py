@@ -207,7 +207,7 @@ def write_openfoam_polymesh(grid: StructGrid, case_dir: str | Path) -> Path:
             )
     n_internal = len(faces)
     # boundary faces: inlet (j=0), outlet (j=nz), wall (k=nr), wedge planes
-    inlet_f, outlet_f, wall_f, wedge_f = [], [], [], []
+    inlet_f, outlet_f, wall_f = [], [], []
     for k in range(nr):
         f = (pid(0, k, 0), pid(0, k + 1, 0), pid(0, k + 1, 1), pid(0, k, 1))
         add_face(f, cell_id(0, k), None)
@@ -220,7 +220,11 @@ def write_openfoam_polymesh(grid: StructGrid, case_dir: str | Path) -> Path:
         f = (pid(j, nr, 0), pid(j + 1, nr, 0), pid(j + 1, nr, 1), pid(j, nr, 1))
         add_face(f, cell_id(j, nr - 1), None)
         wall_f.append(len(faces) - 1)
-    # wedge planes: back plane (theta=-half) owned by first cell, front (+half)
+    # wedge planes: generated plane by plane so the boundary patches
+    # wedge_back (theta=-half) and wedge_front (+half) are contiguous and
+    # in increasing startFace order, as OpenFOAM requires.
+    wedge_back: list[int] = []
+    wedge_front: list[int] = []
     for j in range(nz):
         for k in range(nr):
             f = (
@@ -228,13 +232,15 @@ def write_openfoam_polymesh(grid: StructGrid, case_dir: str | Path) -> Path:
                 pid(j, k + 1, 0),
             )
             add_face(f, cell_id(j, k), None)
-            wedge_f.append(len(faces) - 1)
+            wedge_back.append(len(faces) - 1)
+    for j in range(nz):
+        for k in range(nr):
             f = (
                 pid(j, k, 1), pid(j, k + 1, 1), pid(j + 1, k + 1, 1),
                 pid(j + 1, k, 1),
             )
             add_face(f, cell_id(j, k), None)
-            wedge_f.append(len(faces) - 1)
+            wedge_front.append(len(faces) - 1)
 
     pm = Path(case_dir) / "constant" / "polyMesh"
     pm.mkdir(parents=True, exist_ok=True)
@@ -255,20 +261,26 @@ def write_openfoam_polymesh(grid: StructGrid, case_dir: str | Path) -> Path:
         fh.write(f"{len(owners)}\n(\n")
         fh.write("\n".join(map(str, owners)))
         fh.write("\n)\n")
+    internal_neighbours = neighbours[:n_internal]
     with open(pm / "neighbour", "w", encoding="utf-8") as fh:
         fh.write("FoamFile\n{\n format ascii;\n class labelList;\n object neighbour;\n}\n")
-        fh.write(f"{len(neighbours)}\n(\n")
-        fh.write("\n".join(map(str, neighbours[:n_internal])))
+        fh.write(f"{len(internal_neighbours)}\n(\n")
+        fh.write("\n".join(map(str, internal_neighbours)))
         fh.write("\n)\n")
+    boundary_patches = [
+        ("inlet", "patch", inlet_f),
+        ("outlet", "patch", outlet_f),
+        ("wall", "wall", wall_f),
+        ("wedge_back", "wedge", wedge_back),
+        ("wedge_front", "wedge", wedge_front),
+    ]
     with open(pm / "boundary", "w", encoding="utf-8") as fh:
         fh.write("FoamFile\n{\n format ascii;\n class polyBoundaryMesh;\n object boundary;\n}\n")
-        fh.write("5\n(\n")
-        fh.write("inlet\n{\n type patch;\n nFaces %d;\n startFace %d;\n}\n" % (len(inlet_f), inlet_f[0]))
-        fh.write("outlet\n{\n type patch;\n nFaces %d;\n startFace %d;\n}\n" % (len(outlet_f), outlet_f[0]))
-        fh.write("wall\n{\n type wall;\n nFaces %d;\n startFace %d;\n}\n" % (len(wall_f), wall_f[0]))
-        n_wedge = len(wedge_f)
-        fh.write("wedge_back\n{\n type wedge;\n nFaces %d;\n startFace %d;\n}\n" % (n_wedge // 2, wedge_f[0]))
-        fh.write("wedge_front\n{\n type wedge;\n nFaces %d;\n startFace %d;\n}\n" % (n_wedge // 2, wedge_f[n_wedge // 2]))
+        fh.write(f"{len(boundary_patches)}\n(\n")
+        for name, typ, flist in boundary_patches:
+            fh.write(
+                f"{name}\n{{\n type {typ};\n nFaces {len(flist)};\n startFace {flist[0]};\n}}\n"
+            )
         fh.write(")\n")
     return pm
 

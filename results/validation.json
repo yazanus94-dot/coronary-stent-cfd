@@ -2,13 +2,51 @@
   "poiseuille": [
     {
       "grid": "20x8",
-      "dp": 58.866454540424286,
-      "dp_error_pct": 7.119989389304076,
-      "u_center": 0.33470884283837476,
-      "u_center_error_pct": 1.4201085856956979,
-      "iterations": 32,
-      "mass_residual": 1.70150113277894e-13,
-      "wall_s": 0.17869709999649785
+      "dp": 58.86664490073137,
+      "dp_error_pct": 7.119689037134404,
+      "u_center": 0.33467931278689794,
+      "u_center_error_pct": 1.4288059037687961,
+      "iterations": 17,
+      "mass_residual": 4.0353855835050914e-14,
+      "continuity": {
+        "net_outflow": -4.0353855835050914e-14,
+        "cell_max_abs": 0.02213210685253859,
+        "cell_rms": 0.0046592447920730095,
+        "cell_rel_max": 9.969678537894095e-05
+      },
+      "wall_s": 0.0979510999750346
+    },
+    {
+      "grid": "40x14",
+      "dp": 61.24336865524746,
+      "dp_error_pct": 3.369673357379896,
+      "u_center": 0.3379924328901882,
+      "u_center_error_pct": 0.45301148717904305,
+      "iterations": 16,
+      "mass_residual": 5.513939137477357e-13,
+      "continuity": {
+        "net_outflow": 5.513939137477357e-13,
+        "cell_max_abs": 0.023650408353558493,
+        "cell_rms": 0.0033277674508445927,
+        "cell_rel_max": 0.00013766785481594663
+      },
+      "wall_s": 0.3332670000381768
+    },
+    {
+      "grid": "80x28",
+      "dp": 62.393523743548464,
+      "dp_error_pct": 1.5549485257360207,
+      "u_center": 0.3392159512342384,
+      "u_center_error_pct": 0.09265558956649655,
+      "iterations": 19,
+      "mass_residual": 4.765150416718784e-13,
+      "continuity": {
+        "net_outflow": 4.765150416718784e-13,
+        "cell_max_abs": 0.0055411148572423324,
+        "cell_rms": 0.0004098050876063551,
+        "cell_rel_max": 2.8001740563285786e-05
+      },
+      "wall_s": 1.6544853000086732
     }
   ],
   "womersley": {
@@ -17,36 +55,50 @@
     "cycles": 3,
     "steps": 1200,
     "u_center_range": [
-      -0.027160608467845293,
-      0.5139217334006266
+      -0.02751338397556401,
+      0.5166880392936448
     ],
-    "periodicity_last_cycle_endpoints": 0.005424153588726888,
+    "periodicity_same_phase_cycles": 1.7208456881689926e-15,
+    "cycles_stored": 2,
     "flow_reversal": true,
-    "wall_s": 70.91749810002511
+    "wall_s": 71.91692290001083
   },
   "stenosis": [
     {
       "severity": 0.5,
-      "dp_solver": 240.42464279825126,
+      "dp_solver": 240.90320183924538,
       "dp_straight_baseline": 190.13710534711757,
-      "dp_excess_solver": 50.28753745113369,
+      "dp_excess_solver": 50.766096492127815,
       "dp_young_tsai": 56.93213012933488,
-      "ratio_to_correlation": 0.8832892311756749,
-      "iterations": 55,
-      "wall_s": 5.6215539000113495
+      "ratio_to_correlation": 0.891695012584292,
+      "iterations": 19,
+      "wall_s": 1.8945748999831267
     },
     {
       "severity": 0.7,
-      "dp_solver": 399.2976215208972,
+      "dp_solver": 401.3318383691145,
       "dp_straight_baseline": 190.13710534711757,
-      "dp_excess_solver": 209.16051617377965,
+      "dp_excess_solver": 211.19473302199694,
       "dp_young_tsai": 219.82474742848598,
-      "ratio_to_correlation": 0.9514875764468892,
-      "iterations": 52,
-      "wall_s": 5.489227900019614
+      "ratio_to_correlation": 0.9607413882766016,
+      "iterations": 19,
+      "wall_s": 1.8346136000473052
     }
   ],
-  "gci": {},
-  "total_wall_s": 82.20947680002428,
+  "gci": {
+    "quantity": "dp (Pa), straight tube",
+    "values": [
+      58.86664490073137,
+      61.24336865524746,
+      62.393523743548464
+    ],
+    "r": 2.0,
+    "p": 1.047145820230618,
+    "f_exact": 63.47202571704722,
+    "gci_fine_pct": 2.1606849332865825,
+    "gci_coarse_pct": 4.464920652181871,
+    "monotonic": true
+  },
+  "total_wall_s": 77.73660369997378,
   "accept": true
 }

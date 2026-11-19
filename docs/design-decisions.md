@@ -39,15 +39,20 @@ viscosity iteration within each SIMPLE outer loop, not fully coupled.
 issues. Documented as a known approximation; blood is mildly shear-thinning
 in the coronary regime.
 
-## D5 — Documented stent effect estimate
+## D5 — Geometry-derived protrusion estimate (not strut-resolved CFD)
 
-**Decision:** The stent WSS effect uses a documented protrusion multiplier
-`1 + 2h/Dr` (strut thickness h, local lumen radius Dr), not a resolved 3-D
-strut CFD.
+**Decision:** The stent WSS effect uses an engineering protrusion estimate
+built from the actual stent geometry: protrusion height `h = t*(1 - embed_frac)`
+of each strut into the lumen and a nominal WSS multiplier `1 + 2h/Dr` with
+`Dr` the local lumen radius. It is explicitly NOT a strut-resolved CFD.
 
 **Rationale:** A fully resolved stent strut CFD-FSI would require sub-100-µm
-meshes and FSI coupling — out of scope for this study. The estimate is
-clearly labeled and provides directional insight (stenting raises local WSS).
+meshes around the struts and FSI coupling — out of scope for this study. The
+estimate uses actual strut parameters and the actual lumen radii, is clearly
+labeled, and provides directional insight (stenting raises local WSS). The
+documented limitation is that flow around individual struts is not resolved;
+resolving it is a documented follow-up (pending the OpenFOAM 3-D wedge
+cross-check or an FSI coupling).
 
 ## D6 — Gmsh meshing blocked; structured grid is primary
 

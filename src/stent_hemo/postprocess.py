@@ -157,7 +157,15 @@ def run_postprocess(
         fig.savefig(fig_dir / f"tawss_sev{int(sev*100)}.png", dpi=150)
         plt.close(fig)
 
-    # ---- stent surface comparison (documented simplified estimate) -----
+    # ---- stent effect (geometry-derived protrusion estimate) -----------
+    # The stented-WSS estimate is built from the ACTUAL stent geometry
+    # (strut thickness, embed fraction, stent span) and the ACTUAL lumen
+    # radii of the 70% stenosis geometry: each strut protrudes by
+    # h = t*(1 - embed) into the lumen, and the nominal wall shear is
+    # scaled by the protrusion ratio (1 + 2h/Dr) with Dr the local lumen
+    # radius. This is an engineering estimate, NOT a strut-resolved CFD
+    # run -- flow around individual struts requires the 3-D wedge
+    # simulation or an FSI coupling (see docs/design-decisions.md, D5).
     stent = StentParams()
     vessel70 = VesselGeometry(severity=0.7, length=90e-3)
     grid = StructGrid(vessel70, 120, 24)
@@ -165,20 +173,30 @@ def run_postprocess(
     sol = solver.solve(wf, steady=True, max_outer=600, tol=1e-6)
     uc = sol.u
     wss_clean = _wall_wss_steady(grid, uc, blood.mu_newtonian)
-    # strut-protrusion WSS multiplier: local shear scales ~ (1 + 2*h/Dr)
-    # for a protruding rib height h at local lumen radius Dr (documented
-    # order-of-magnitude estimate, not a resolved strut CFD)
     rc = grid.r_center
     zh = np.linspace(0.0, vessel70.length, len(rc))
     in_stent = (np.abs(zh - vessel70.xc) <= stent_span_len(stent, vessel70) / 2)
-    h = stent.strut_thickness * (1.0 - stent.embed_frac)
-    wss_stent = np.where(in_stent, wss_clean * (1.0 + 2.0 * h / np.maximum(rc, 1e-9)), wss_clean)
+    h = stent.strut_thickness * (1.0 - stent.embed_frac)  # protrusion height
+    wss_multiplier = 1.0 + 2.0 * h / np.maximum(rc, 1e-9)  # nominal ratio
+    wss_stent = np.where(in_stent, wss_clean * wss_multiplier, wss_clean)
     out["stent_effect"] = {
-        "model": "protrusion multiplier 1 + 2h/Dr (documented estimate)",
+        "model": (
+            "geometry-derived protrusion estimate: nominal multiplier "
+            "1 + 2h/Dr with h = strut_thickness*(1 - embed_frac) and Dr = "
+            "local lumen radius; not a strut-resolved CFD"
+        ),
+        "strut_protrusion_h_m": float(h),
+        "stent_span_m": float(stent_span_len(stent, vessel70)),
         "wss_max_clean": float(wss_clean.max()),
         "wss_max_stented": float(wss_stent.max()),
         "tawss_ratio_throat": float(
             wss_stent[np.argmin(rc)] / max(wss_clean[np.argmin(rc)], 1e-12)
+        ),
+        "limitation": (
+            "No strut-resolved flow simulation: flow around individual "
+            "struts requires the 3-D wedge OpenFOAM run or an FSI "
+            "coupling; see docs/design-decisions.md (D5) and the "
+            "Limitations section of the README."
         ),
     }
 
@@ -187,7 +205,7 @@ def run_postprocess(
     ax.plot(zh * 1e3, wss_stent, label="stented (est.)")
     ax.set_xlabel("z (mm)")
     ax.set_ylabel("WSS (Pa)")
-    ax.set_title("70% stenosis: clean vs stented WSS (documented estimate)")
+    ax.set_title("70% stenosis: clean vs stented WSS (geometry-derived estimate)")
     ax.legend(fontsize=8)
     fig.tight_layout()
     fig.savefig(fig_dir / "stent_wss_70.png", dpi=150)

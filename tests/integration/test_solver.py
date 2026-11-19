@@ -31,6 +31,36 @@ def test_transient_stays_finite(vessel_stenosis_50, wf, blood):
     assert np.isfinite(hist).all()
 
 
+# ---- Newtonian / Carreau execution -------------------------------------
+
+
+def test_newtonian_and_carreau_modes_execute(vessel_stenosis_50, wf, blood):
+    """Both Newtonian and Carreau modes run and produce continuous fields."""
+    import pytest
+
+    grid = StructGrid(vessel_stenosis_50, 40, 12)
+    for use_carreau in (False, True):
+        solver = AxisymSolver(grid, blood, use_carreau=use_carreau)
+        sol = solver.solve(wf, steady=True, max_outer=400, tol=1e-5)
+        assert np.isfinite(sol.u).all()
+        assert np.isfinite(sol.p).all()
+        assert sol.continuity is not None
+        assert sol.continuity["net_outflow"] == pytest.approx(0.0, abs=1e-6)
+        assert sol.continuity["cell_rel_max"] < 0.1
+        if use_carreau:
+            assert np.isfinite(sol.mu).all()
+            assert sol.mu.min() > 0
+
+
+def test_transient_carreau_executes(vessel_stenosis_50, wf, blood):
+    """Carreu transient run on a small stenosis grid is finite."""
+    grid = StructGrid(vessel_stenosis_50, 20, 8)
+    solver = AxisymSolver(grid, blood, use_carreau=True)
+    sol = solver.solve(wf, steady=False, dt=2e-3, n_cycles=2)
+    assert sol.u_history is not None
+    assert np.isfinite(sol.u_history).all()
+
+
 # ---- validation integration --------------------------------------------
 
 

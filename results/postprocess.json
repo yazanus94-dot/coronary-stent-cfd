@@ -2,36 +2,39 @@
   "cases": [
     {
       "severity": 0.5,
-      "dp_steady": 240.42464279825126,
+      "dp_steady": 240.90320183924538,
       "dp_young_tsai": 56.93213012933488,
-      "u_center_max_steady": 0.5475193107234838,
-      "wss_steady_max": 7.134617024289464,
-      "wss_steady_throat": 7.134617024289464,
-      "tawss_max": 7.828218911452918,
-      "osi_max": 0.03753968848185668,
-      "rrt_max": 2.870233728129274,
+      "u_center_max_steady": 0.5028014788389954,
+      "wss_steady_max": 7.853484732887519,
+      "wss_steady_throat": 7.853484732887519,
+      "tawss_max": 8.020006543250192,
+      "osi_max": 0.12856925558313714,
+      "rrt_max": 5.523043853591668,
       "transient_grid": "60x12",
       "transient_dt_s": 0.002
     },
     {
       "severity": 0.7,
-      "dp_steady": 399.2976215208972,
+      "dp_steady": 401.3318383691145,
       "dp_young_tsai": 219.82474742848598,
-      "u_center_max_steady": 0.814651420482593,
-      "wss_steady_max": 18.68793246483043,
-      "wss_steady_throat": 18.68793246483043,
-      "tawss_max": 19.01010133343577,
-      "osi_max": 0.3000016660930283,
-      "rrt_max": 6.335242029466021,
+      "u_center_max_steady": 0.7463114449200381,
+      "wss_steady_max": 20.072618626156636,
+      "wss_steady_throat": 20.072618626156636,
+      "tawss_max": 19.31090028880266,
+      "osi_max": 0.2274661107214554,
+      "rrt_max": 6.317875248700196,
       "transient_grid": "60x12",
       "transient_dt_s": 0.002
     }
   ],
   "stent_effect": {
-    "model": "protrusion multiplier 1 + 2h/Dr (documented estimate)",
-    "wss_max_clean": 18.68793246483043,
-    "wss_max_stented": 21.611589898774437,
-    "tawss_ratio_throat": 1.1564462756619094
+    "model": "geometry-derived protrusion estimate: nominal multiplier 1 + 2h/Dr with h = strut_thickness*(1 - embed_frac) and Dr = local lumen radius; not a strut-resolved CFD",
+    "strut_protrusion_h_m": 6.500000000000001e-05,
+    "stent_span_m": 0.0252,
+    "wss_max_clean": 20.072618626156636,
+    "wss_max_stented": 23.212905053000714,
+    "tawss_ratio_throat": 1.1564462756619094,
+    "limitation": "No strut-resolved flow simulation: flow around individual struts requires the 3-D wedge OpenFOAM run or an FSI coupling; see docs/design-decisions.md (D5) and the Limitations section of the README."
   },
   "openfoam_cross_check": {
     "status": "TBD",

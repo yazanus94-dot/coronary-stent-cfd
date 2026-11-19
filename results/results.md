@@ -6,11 +6,11 @@ discretization choices and results/validation.json for the V&V run.
 
 | case | dp steady (Pa) | Young-Tsai excess (Pa) | u_center max (m/s) | WSS max (Pa) | TAWSS max (Pa) | OSI max |
 |---|---|---|---|---|---|---|
-| 50% stenosis | 240.42 | 56.93 | 0.5475 | 7.135 | 7.828 | 0.038 |
-| 70% stenosis | 399.30 | 219.82 | 0.8147 | 18.688 | 19.010 | 0.300 |
+| 50% stenosis | 240.90 | 56.93 | 0.5028 | 7.853 | 8.020 | 0.129 |
+| 70% stenosis | 401.33 | 219.82 | 0.7463 | 20.073 | 19.311 | 0.227 |
 
-Stent effect (protrusion multiplier 1 + 2h/Dr (documented estimate)): WSS max 18.688 Pa (clean)
-vs 21.612 Pa (stented estimate).
+Stent effect (geometry-derived protrusion estimate: nominal multiplier 1 + 2h/Dr with h = strut_thickness*(1 - embed_frac) and Dr = local lumen radius; not a strut-resolved CFD): WSS max 20.073 Pa (clean)
+vs 23.213 Pa (stented estimate).
 
 ## OpenFOAM cross-check
 

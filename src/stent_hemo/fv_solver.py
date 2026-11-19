@@ -44,6 +44,7 @@ class FlowSolution:
     dp: float  # area-averaged static pressure drop inlet-to-outlet (Pa)
     grid: StructGrid
     u_history: np.ndarray | None = None  # transient: (n_samples, nz, nr)
+    continuity: dict[str, float] | None = None  # continuity diagnostics (m^3/s, 1/s)
 
 
 def harmonic_inlet_profile(
@@ -415,19 +416,43 @@ class AxisymSolver:
 
     # ------------------------------------------------------------------
     def _carreau_field(self, u: np.ndarray, v: np.ndarray) -> np.ndarray:
-        """Apparent viscosity (nz, nr) from the local strain rate."""
-        dudz = np.gradient(u, self.dz, axis=0)
-        dudr = np.gradient(u, self.rc / self.nr, axis=1)
-        dvdz = np.gradient(v, self.dz, axis=0)
-        dvdr = np.gradient(v, self.rc / self.nr, axis=1)
-        vt = v / np.maximum(0.5 * (self.grid.cell_r_bounds()[0] + self.grid.cell_r_bounds()[1]), 1e-9)
+        """Apparent viscosity (nz, nr) from the local strain rate.
+
+        ``u`` is the axial velocity on the staggered z-faces (nz+1, nr)
+        and ``v`` the radial velocity on the staggered r-faces
+        (nz, nr+1). Interior face values are interpolated to cell centers
+        (face average); the shear-rate magnitude follows the axisymmetric
+        no-swirl tensor magnitude
+
+            gamma^2 = dudz^2 + dvdr^2 + 2 (v_r / r)^2
+                      + 0.5 (dudr + dvdz)^2
+
+        where dudz = du_z/dz, dvdr = du_r/dr, dvdz = du_r/dz and dudr =
+        du_z/dr, all evaluated on the cell centers with the cylindrical
+        spacing (rc/nr) between adjacent cell centers.
+        """
+        r_in, r_out = self.grid.cell_r_bounds()
+        r_c = 0.5 * (r_in + r_out)  # (nz, nr) cell-center mean radii
+        u_c = 0.5 * (u[:-1] + u[1:])  # (nz, nr) cell-centered axial velocity
+        v_c = 0.5 * (v[:, :-1] + v[:, 1:])  # (nz, nr) cell-centered radial velocity
+        dz = self.dz
+        dr = self.rc / self.nr  # (nz,) radial spacing, uniform per column
+
+        def rad_grad(field: np.ndarray) -> np.ndarray:
+            """Cylindrical gradient of a cell-centered field (1/s)."""
+            out = np.empty_like(field)
+            out[:, 1:-1] = (field[:, 2:] - field[:, :-2]) / (2.0 * dr[:, None])
+            out[:, 0] = (field[:, 1] - field[:, 0]) / dr
+            out[:, -1] = (field[:, -1] - field[:, -2]) / dr
+            return out
+
+        dudz = np.gradient(u_c, dz, axis=0)  # du_z/dz
+        dvdz = np.gradient(v_c, dz, axis=0)  # du_r/dz
+        dvdr = rad_grad(v_c)  # du_r/dr
+        dudr = rad_grad(u_c)  # du_z/dr
+        vt = v_c / np.maximum(r_c, 1e-12)  # v_r / r at the cell center
         rate = np.sqrt(
-            2.0 * (
-                dudz**2
-                + dvdr**2
-                + vt**2
-                + 2.0 * (0.5 * (dudr + dvdz)) ** 2
-            )
+            dudz**2 + dvdr**2 + 2.0 * vt**2 + 0.5 * (dudr + dvdz) ** 2
         )
         vec_carreau = np.vectorize(self.blood.carreau_viscosity)
         return vec_carreau(rate)
@@ -467,13 +492,19 @@ class AxisymSolver:
             it_final, res_final = 0, float("inf")
             for outer in range(1, max_outer + 1):
                 if self.use_carreau:
-                    mu = self._carreau_field(u[1:nz], vel[:, 1:nr])
+                    mu = self._carreau_field(u, vel)
                 u, a_u = self._u_momentum(u, vel, p, mu, None, None, relax)
                 v, a_v = self._v_momentum(u, vel, p, mu, None, None, relax)
                 u[nz] = u[nz - 1]  # outlet extrapolation
                 d_u = self.vu / np.maximum(a_u, 1e-300)  # V/a_P (nz-1, nr)
                 d_v = self.vv / np.maximum(a_v, 1e-300)  # (nz, nr-1)
-                pp = self._poisson(u, vel, d_u, d_v)
+                # Poisson star-face fluxes from the PREDICTED fields: the
+                # predicted axial velocity (from _u_momentum) and the
+                # predicted radial velocity (from _v_momentum) are what the
+                # pressure correction integrates; the correction below
+                # updates the predicted field itself, so the radial
+                # momentum predictor is part of the SIMPLE sequence.
+                pp = self._poisson(u, v, d_u, d_v)
                 rp = 0.5  # pressure under-relaxation
                 p = p + rp * pp
                 # apply corrections from the CORRECTION field pp only
@@ -481,13 +512,15 @@ class AxisymSolver:
                     u[j] -= d_u[j - 1] * rp * (pp[j] - pp[j - 1]) / self.dz
                 for j in range(nz):
                     for k in range(1, nr):
-                        vel[j, k] -= d_v[j, k - 1] * rp * (
+                        v[j, k] -= d_v[j, k - 1] * rp * (
                             pp[j, k] - pp[j, k - 1]
                         ) / self.drv[j][k - 1]
-                vel[:, 0] = 0.0
-                vel[:, nr] = 0.0
+                v[:, 0] = 0.0
+                v[:, nr] = 0.0
+                # the corrected predicted field becomes the working field
+                vel = v
                 u[nz] = u[nz - 1]
-                res = self._mass_res(u, v)
+                res = self._mass_res(u, vel)
                 it_final, res_final = outer, res
                 if verbose and outer % 25 == 0:
                     print(f"  iter {outer}: res {res:.3e}")
@@ -495,12 +528,16 @@ class AxisymSolver:
                     break
             uc = 0.5 * (u[:-1] + u[1:])
             dp = float(np.average(p[0], weights=self.az[0]) - np.average(p[-1], weights=self.az[-1]))
-            return FlowSolution(uc, vel[:, :-1], p, mu, it_final, res_final, dp, self.grid)
+            continuity = self._continuity_stats(u, vel)
+            return FlowSolution(uc, vel[:, :-1], p, mu, it_final, res_final, dp, self.grid,
+                                continuity=continuity)
 
         # ---- transient (Womersley pulsatile inlet) -----------------------
         n_per = int(round(wf.period / dt))
         n_steps = n_per * n_cycles
-        keep = n_per
+        # store the last TWO consecutive cycles so periodicity can be
+        # validated between identical phases of consecutive cycles
+        keep = 2 * n_per if n_cycles >= 2 else n_per
         u_hist = []
         it_final, res_final = 0, 0.0
         for step in range(1, n_steps + 1):
@@ -513,25 +550,28 @@ class AxisymSolver:
             mu_loc = mu
             for _ in range(3):
                 if self.use_carreau:
-                    mu_loc = self._carreau_field(u[1:nz], vel[:, 1:nr])
+                    mu_loc = self._carreau_field(u, vel)
                 u, a_u = self._u_momentum(u, vel, p, mu_loc, dt, u_old, 0.8)
                 v, a_v = self._v_momentum(u, vel, p, mu_loc, dt, v_old, 0.8)
                 u[nz] = u[nz - 1]
                 d_u = self.vu / np.maximum(a_u, 1e-300)
                 d_v = self.vv / np.maximum(a_v, 1e-300)
-                pp = self._poisson(u, vel, d_u, d_v)
+                # Poisson star-face fluxes from the PREDICTED fields (same
+                # integration of the radial momentum predictor as steady).
+                pp = self._poisson(u, v, d_u, d_v)
                 rp = 0.8  # pressure under-relaxation
                 p = p + rp * pp
                 for j in range(1, nz):
                     u[j] -= d_u[j - 1] * rp * (pp[j] - pp[j - 1]) / self.dz
                 for j in range(nz):
                     for k in range(1, nr):
-                        vel[j, k] -= d_v[j, k - 1] * rp * (
+                        v[j, k] -= d_v[j, k - 1] * rp * (
                             pp[j, k] - pp[j, k - 1]
                         ) / self.drv[j][k - 1]
-                vel[:, 0] = 0.0
-                vel[:, nr] = 0.0
+                v[:, 0] = 0.0
+                v[:, nr] = 0.0
                 u[nz] = u[nz - 1]
+                vel = v
             res = self._mass_res(u, v)
             it_final, res_final = step, res
             if step > n_steps - keep:
@@ -541,16 +581,57 @@ class AxisymSolver:
         return FlowSolution(
             uc, v[:, :-1], p, mu, it_final, res_final, dp, self.grid,
             u_history=np.array(u_hist) if u_hist else None,
+            continuity=self._continuity_stats(u, v),
         )
 
     # ------------------------------------------------------------------
     def _mass_res(self, u: np.ndarray, v: np.ndarray) -> float:
-        """Net mass outflow imbalance over the whole domain (m^3/s)."""
-        rho = self.blood.rho
-        net = rho * float(np.sum(u[self.nz] * self.az[self.nz]) - np.sum(u[0] * self.az[0]))
-        for j in range(self.nz):
-            net += rho * float(
-                np.sum(v[j, self.nr] * self.ar[j][self.nr])
-                - np.sum(v[j, 0] * self.ar[j][0])
-            )
-        return abs(net)
+        """Net volumetric outflow imbalance over the whole domain (m^3/s).
+
+        Sum of the per-cell FV fluxes through the staggered faces: the
+        axial terms telescope to ``u[nz]*az[nz] - u[0]*az[0]``; the radial
+        terms telescope to the zero wall/axis fluxes. The density is NOT
+        multiplied in -- the residual is a volumetric flow imbalance in
+        SI units, matching the ``tol * |q|`` convergence tolerance. The
+        magnitude is returned (non-negative), as in the original
+        implementation, so the ``res < tol*|q|`` check stays meaningful.
+        """
+        return abs(float(np.sum(self._cell_continuity(u, v))))
+
+    # ------------------------------------------------------------------
+    def _cell_continuity(self, u: np.ndarray, v: np.ndarray) -> np.ndarray:
+        """Per-cell net volumetric outflow (m^3/s) of the FV face fluxes.
+
+        ``u`` is the axial velocity on z-faces (nz+1, nr); ``v`` the radial
+        velocity on r-faces (nz, nr+1); cells are (nz, nr).
+        """
+        dz_flux = u[1:, :] * self.az[1:, :] - u[:-1, :] * self.az[:-1, :]
+        r_flux = v[:, 1:] * self.ar[:, 1:] - v[:, :-1] * self.ar[:, :-1]
+        return dz_flux + r_flux
+
+    # ------------------------------------------------------------------
+    def _continuity_stats(self, u: np.ndarray, v: np.ndarray) -> dict[str, float]:
+        """Continuity diagnostics on the corrected face fields.
+
+        ``net_outflow`` is the domain-level imbalance (m^3/s, the same
+        quantity as ``mass_residual``); ``cell_max_abs`` and ``cell_rms``
+        are the normalized per-cell divergence residuals (1/s) of the FV
+        fluxes divided by the cell volumes; ``cell_rel_max`` is the
+        dimensionless per-cell continuity residual: the magnitude of the
+        unbalanced flux as a fraction of the cell's gross face fluxes.
+        """
+        flux = self._cell_continuity(u, v)
+        divergence = flux / np.maximum(self.vol, 1e-300)
+        # per-face flux magnitudes: out-faces and in-faces of each cell
+        dz_out = np.abs(u[1:, :] * self.az[1:, :])
+        dz_in = np.abs(u[:-1, :] * self.az[:-1, :])
+        r_out = np.abs(v[:, 1:] * self.ar[:, 1:])
+        r_in = np.abs(v[:, :-1] * self.ar[:, :-1])
+        gross = dz_out + dz_in + r_out + r_in
+        cell_rel = np.abs(flux) / np.maximum(gross, 1e-300)
+        return {
+            "net_outflow": float(np.sum(flux)),
+            "cell_max_abs": float(np.max(np.abs(divergence))),
+            "cell_rms": float(np.sqrt(np.mean(divergence**2))),
+            "cell_rel_max": float(np.max(cell_rel)),
+        }
