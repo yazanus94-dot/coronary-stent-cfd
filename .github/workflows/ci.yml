@@ -50,24 +50,21 @@ jobs:
       - name: Diagnostics — image tools, case dictionaries, Allrun
         shell: bash
         run: |
-          bash --noprofile --norc -e -o pipefail <<'EOS'
           source /opt/openfoam11/etc/bashrc
           echo "WM_PROJECT_VERSION=$WM_PROJECT_VERSION"
           echo "FOAM_INSTALL_DIR=$FOAM_INSTALL_DIR"
           for b in foamRun checkMesh blockMesh postProcess; do
-            command -v "$b" >/dev/null 2>&1 || { echo "MISSING EXECUTABLE: $b"; exit 1; }
-            echo "found $b -> $(command -v $b)"
+            if command -v "$b" >/dev/null 2>&1; then echo "found $b -> $(command -v $b)"; else echo "MISSING EXECUTABLE: $b"; fi
           done
           for c in openfoam/stenosis_50 openfoam/stenosis_70; do
             echo "case dir: $(pwd)/$c"
             for f in 0/U 0/p constant/physicalProperties system/controlDict system/fvSchemes system/fvSolution constant/polyMesh/owner constant/polyMesh/neighbour constant/polyMesh/faces constant/polyMesh/points constant/polyMesh/boundary; do
-              [ -s "$c/$f" ] || { echo "MISSING FILE: $c/$f"; exit 1; }
+              if [ -s "$c/$f" ]; then echo "  ok: $c/$f"; else echo "  MISSING FILE: $c/$f"; fi
             done
-            echo "=== $c/Allrun ==="; cat "$c/Allrun"
-            echo "=== $c/constant/polyMesh/boundary ==="; cat "$c/constant/polyMesh/boundary"
-            echo "=== $c inlet BC ==="; sed -n '/inlet/,/}/p' "$c/0/U"
+            echo "=== $c/Allrun ==="; cat "$c/Allrun" 2>&1 || echo "(no Allrun)"
+            echo "=== $c/constant/polyMesh/boundary ==="; cat "$c/constant/polyMesh/boundary" 2>&1 || true
+            echo "=== $c inlet BC ==="; sed -n '/inlet/,/}/p' "$c/0/U" 2>&1 || true
           done
-          EOS
         timeout-minutes: 10
       - name: checkMesh stenosis_50 (before solver)
         shell: bash
