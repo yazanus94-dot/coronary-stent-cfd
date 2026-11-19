@@ -14,39 +14,7 @@
         "cell_rms": 0.0046592447920730095,
         "cell_rel_max": 9.969678537894095e-05
       },
-      "wall_s": 0.0979510999750346
-    },
-    {
-      "grid": "40x14",
-      "dp": 61.24336865524746,
-      "dp_error_pct": 3.369673357379896,
-      "u_center": 0.3379924328901882,
-      "u_center_error_pct": 0.45301148717904305,
-      "iterations": 16,
-      "mass_residual": 5.513939137477357e-13,
-      "continuity": {
-        "net_outflow": 5.513939137477357e-13,
-        "cell_max_abs": 0.023650408353558493,
-        "cell_rms": 0.0033277674508445927,
-        "cell_rel_max": 0.00013766785481594663
-      },
-      "wall_s": 0.3332670000381768
-    },
-    {
-      "grid": "80x28",
-      "dp": 62.393523743548464,
-      "dp_error_pct": 1.5549485257360207,
-      "u_center": 0.3392159512342384,
-      "u_center_error_pct": 0.09265558956649655,
-      "iterations": 19,
-      "mass_residual": 4.765150416718784e-13,
-      "continuity": {
-        "net_outflow": 4.765150416718784e-13,
-        "cell_max_abs": 0.0055411148572423324,
-        "cell_rms": 0.0004098050876063551,
-        "cell_rel_max": 2.8001740563285786e-05
-      },
-      "wall_s": 1.6544853000086732
+      "wall_s": 0.0866997999837622
     }
   ],
   "womersley": {
@@ -61,7 +29,7 @@
     "periodicity_same_phase_cycles": 1.7208456881689926e-15,
     "cycles_stored": 2,
     "flow_reversal": true,
-    "wall_s": 71.91692290001083
+    "wall_s": 64.0454810000374
   },
   "stenosis": [
     {
@@ -72,7 +40,7 @@
       "dp_young_tsai": 56.93213012933488,
       "ratio_to_correlation": 0.891695012584292,
       "iterations": 19,
-      "wall_s": 1.8945748999831267
+      "wall_s": 1.7028692999738269
     },
     {
       "severity": 0.7,
@@ -82,23 +50,10 @@
       "dp_young_tsai": 219.82474742848598,
       "ratio_to_correlation": 0.9607413882766016,
       "iterations": 19,
-      "wall_s": 1.8346136000473052
+      "wall_s": 1.6945721000083722
     }
   ],
-  "gci": {
-    "quantity": "dp (Pa), straight tube",
-    "values": [
-      58.86664490073137,
-      61.24336865524746,
-      62.393523743548464
-    ],
-    "r": 2.0,
-    "p": 1.047145820230618,
-    "f_exact": 63.47202571704722,
-    "gci_fine_pct": 2.1606849332865825,
-    "gci_coarse_pct": 4.464920652181871,
-    "monotonic": true
-  },
-  "total_wall_s": 77.73660369997378,
+  "gci": {},
+  "total_wall_s": 67.53207289997954,
   "accept": true
 }

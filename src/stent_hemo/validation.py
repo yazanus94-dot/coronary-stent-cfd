@@ -169,7 +169,7 @@ def np_maxabs(a, b) -> float:
     return float(np.abs(np.asarray(a) - np.asarray(b)).max())
 
 
-def phase_periodicity(hist: np.ndarray, n_per: int) -> float:
+def phase_periodicity(hist: Any, n_per: int) -> float:
     """Max |field| difference between identical phases of consecutive cycles.
 
     ``hist`` holds the last two stored cycles (``2 * n_per`` samples; the
