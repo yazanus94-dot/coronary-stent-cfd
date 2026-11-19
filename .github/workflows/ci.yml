@@ -48,6 +48,7 @@ jobs:
           python3 -m pip install --quiet numpy scipy matplotlib
           PYTHONPATH=src python3 -m stent_hemo.pipeline cases
       - name: Run wedge cases
+        shell: bash
         run: |
           source /opt/openfoam11/etc/bashrc
           for c in openfoam/stenosis_*; do
