@@ -7,6 +7,10 @@ project adheres to [Semantic Versioning](https://semver.org/).
 ## [1.0.2] - 2026-11-19
 
 ### Fixed
+- CI: `openfoam-crosscheck` job now runs the OpenFOAM container as root
+  (`options: --user 0`) — the image's non-root `openfoam` user could not write
+  the runner-mounted temp files during `actions/checkout@v4` (EACCES).
+
 - OpenFOAM wedge cases (`external_cases.write_openfoam_case`, `mesh_io.write_openfoam_polymesh`):
   - `write_openfoam_polymesh`: `neighbour` file now has `n_internal` entries
     (previously wrote the total face count as the count but only the
