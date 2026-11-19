@@ -51,6 +51,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/bin:$PATH"
+export LD_LIBRARY_PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/lib:$LD_LIBRARY_PATH"
           echo "WM_PROJECT_VERSION=${WM_PROJECT_VERSION:-v11} (image openfoam11-paraview510)"
           echo "FOAM_INSTALL_DIR=${FOAM_INSTALL_DIR:-/opt/openfoam11}"
           for b in foamRun checkMesh blockMesh postProcess; do
@@ -71,6 +72,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/bin:$PATH"
+export LD_LIBRARY_PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/lib:$LD_LIBRARY_PATH"
           cd openfoam/stenosis_50
           checkMesh 2>&1 | tee checkMesh.log
           echo "checkMesh exit: ${PIPESTATUS[0]}"
@@ -79,6 +81,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/bin:$PATH"
+export LD_LIBRARY_PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/lib:$LD_LIBRARY_PATH"
           cd openfoam/stenosis_70
           checkMesh 2>&1 | tee checkMesh.log
           echo "checkMesh exit: ${PIPESTATUS[0]}"
@@ -92,6 +95,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/bin:$PATH"
+export LD_LIBRARY_PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/lib:$LD_LIBRARY_PATH"
           set +e
           cd openfoam/stenosis_50
           bash Allrun 2>&1 | tee run.log
@@ -104,6 +108,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/bin:$PATH"
+export LD_LIBRARY_PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/lib:$LD_LIBRARY_PATH"
           set +e
           cd openfoam/stenosis_70
           bash Allrun 2>&1 | tee run.log
