@@ -339,10 +339,28 @@ boundaryField
     )
 
     (case_dir / "Allrun").write_text(
-        """#!/bin/sh
+        """#!/bin/bash
+# OpenFOAM case runner. Captures each command's output and exit code,
+# and propagates failures (the case is not "green" without a completed run).
 cd "$(dirname "$0")" || exit 1
-foamRun -solver incompressibleFluid | tee log.foamRun
-postProcess -func wallShearStress -latestTime | tee log.post
+
+foamRun -solver incompressibleFluid 2>&1 | tee log.foamRun
+foam_rc=${PIPESTATUS[0]}
+echo "foamRun exit code: $foam_rc"
+
+postProcess -func wallShearStress -latestTime 2>&1 | tee log.post
+post_rc=${PIPESTATUS[0]}
+echo "postProcess exit code: $post_rc"
+
+if [ "$foam_rc" -ne 0 ]; then
+    echo "foamRun FAILED (exit code $foam_rc): case not simulated to completion."
+    exit "$foam_rc"
+fi
+if [ "$post_rc" -ne 0 ]; then
+    echo "postProcess FAILED (exit code $post_rc)."
+    exit "$post_rc"
+fi
+echo "Allrun: foamRun and postProcess completed; case simulated."
 """,
         encoding="utf-8",
     )

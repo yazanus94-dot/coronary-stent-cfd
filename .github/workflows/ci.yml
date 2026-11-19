@@ -47,14 +47,83 @@ jobs:
           apt-get update -qq && apt-get install -y -qq python3-pip
           python3 -m pip install --quiet numpy scipy matplotlib
           PYTHONPATH=src python3 -m stent_hemo.pipeline cases
-      - name: Run wedge cases
+      - name: Diagnostics — image tools, case dictionaries, Allrun
         shell: bash
         run: |
+          bash --noprofile --norc -e -o pipefail <<'EOS'
           source /opt/openfoam11/etc/bashrc
-          for c in openfoam/stenosis_*; do
-            (cd "$c" && bash Allrun)
+          echo "WM_PROJECT_VERSION=$WM_PROJECT_VERSION"
+          echo "FOAM_INSTALL_DIR=$FOAM_INSTALL_DIR"
+          for b in foamRun checkMesh blockMesh postProcess; do
+            command -v "$b" >/dev/null 2>&1 || { echo "MISSING EXECUTABLE: $b"; exit 1; }
+            echo "found $b -> $(command -v $b)"
           done
+          for c in openfoam/stenosis_50 openfoam/stenosis_70; do
+            echo "case dir: $(pwd)/$c"
+            for f in 0/U 0/p constant/physicalProperties system/controlDict system/fvSchemes system/fvSolution constant/polyMesh/owner constant/polyMesh/neighbour constant/polyMesh/faces constant/polyMesh/points constant/polyMesh/boundary; do
+              [ -s "$c/$f" ] || { echo "MISSING FILE: $c/$f"; exit 1; }
+            done
+            echo "=== $c/Allrun ==="; cat "$c/Allrun"
+            echo "=== $c/constant/polyMesh/boundary ==="; cat "$c/constant/polyMesh/boundary"
+            echo "=== $c inlet BC ==="; sed -n '/inlet/,/}/p' "$c/0/U"
+          done
+          EOS
+        timeout-minutes: 10
+      - name: checkMesh stenosis_50 (before solver)
+        shell: bash
+        run: |
+          cd openfoam/stenosis_50
+          checkMesh 2>&1 | tee checkMesh.log
+          echo "checkMesh exit: ${PIPESTATUS[0]}"
+        timeout-minutes: 10
+      - name: checkMesh stenosis_70 (before solver)
+        shell: bash
+        run: |
+          cd openfoam/stenosis_70
+          checkMesh 2>&1 | tee checkMesh.log
+          echo "checkMesh exit: ${PIPESTATUS[0]}"
+        timeout-minutes: 10
+      - name: Inspect mesh quality (stenosis_50)
+        run: |
+          cd openfoam/stenosis_50
+          grep -E "Zero or negative cell volume|Minimum negative volume|Open cells|non-orthogonality|Failed|Faces not in upper|Boundary openness" checkMesh.log | head -15 || echo "(no mesh warning patterns matched)"
+        timeout-minutes: 5
+      - name: Run wedge case stenosis_50
+        shell: bash
+        run: |
+          set +e
+          cd openfoam/stenosis_50
+          bash Allrun 2>&1 | tee run.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "stenosis_50 Allrun exit code: $rc"
+          test "$rc" -eq 0
+        timeout-minutes: 15
+      - name: Run wedge case stenosis_70
+        shell: bash
+        run: |
+          set +e
+          cd openfoam/stenosis_70
+          bash Allrun 2>&1 | tee run.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "stenosis_70 Allrun exit code: $rc"
+          test "$rc" -eq 0
+        timeout-minutes: 15
+      - name: Verify solver time advancement (stenosis_50)
+        if: always()
+        run: |
+          cd openfoam/stenosis_50 2>/dev/null || { echo "case dir missing"; exit 0; }
+          echo "--- time dirs (sorted):"; ls -d [0-9]* 2>/dev/null | sort -n | head -40 || true
+          echo "--- last 5 lines of log.foamRun:"; tail -5 log.foamRun 2>/dev/null || echo "(no log.foamRun)"
+        timeout-minutes: 5
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: openfoam-results
-          path: openfoam/**/postProcessing/
+          path: |
+            openfoam/**/log.*
+            openfoam/**/run.log
+            openfoam/**/checkMesh.log
+            openfoam/**/postProcessing/
+            openfoam/**/[0-9]*/
