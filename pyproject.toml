@@ -7,7 +7,7 @@ name = "stent-hemo"
 version = "0.1.0"
 description = "Hemodynamics of a stenosed coronary artery and the effect of a stent: in-house axisymmetric FV solver + OpenFOAM/SU2/CalculiX cross-check decks"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 license = { text = "MIT" }
 authors = [{ name = "yazanus94-dot" }]
 keywords = ["CFD", "hemodynamics", "stenosis", "stent", "OpenFOAM", "SU2"]

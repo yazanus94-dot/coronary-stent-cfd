@@ -7,6 +7,10 @@ project adheres to [Semantic Versioning](https://semver.org/).
 ## [1.0.2] - 2026-11-19
 
 ### Fixed
+- CI: `openfoam-crosscheck` job — container runs as root (`options: --user 0`, fixes the checkout EACCES).
+- CI: `Generate cases` now installs pip via apt (the image ships Python 3.8 without pip) and runs the case generator via `PYTHONPATH=src python3 -m stent_hemo.pipeline cases` (`pip install -e .` is not used).
+- `pyproject.toml` `requires-python` lowered to `>=3.8`; `write_calculix_inp` `zip(..., strict=False)` replaced with a 3.8-compatible `zip` (the image's Python is 3.8.10).
+
 - CI: `openfoam-crosscheck` job now runs the OpenFOAM container as root
   (`options: --user 0`) — the image's non-root `openfoam` user could not write
   the runner-mounted temp files during `actions/checkout@v4` (EACCES).

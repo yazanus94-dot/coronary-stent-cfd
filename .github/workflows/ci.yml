@@ -40,10 +40,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Generate cases
+        # The OpenFOAM image ships Python 3.8 (no pip); install pip via apt,
+        # then run the case generator via PYTHONPATH (the package declares
+        # requires-python >= 3.8 now).
         run: |
+          apt-get update -qq && apt-get install -y -qq python3-pip
           python3 -m pip install --quiet numpy scipy matplotlib
-          python3 -m pip install --quiet -e . --no-deps
-          stent-hemo cases
+          PYTHONPATH=src python3 -m stent_hemo.pipeline cases
       - name: Run wedge cases
         run: |
           source /opt/openfoam11/etc/bashrc
