@@ -31,6 +31,8 @@ project adheres to [Semantic Versioning](https://semver.org/).
     the readers use `List::operator>>` which rejects headers).
 
 ### Tests
+- Added `hypothesis>=6.0` to dev extras (CI `Unit tests` step failed with
+  `ModuleNotFoundError: No module named 'hypothesis'` — property tests import it).
 - Structural validation of both cases (mesh consistency: owner/neighbour/
   faces/boundary counts, boundary patch names and contiguity, boundaryData
   waveform data) — see the local validation script.

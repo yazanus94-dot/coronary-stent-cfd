@@ -26,6 +26,7 @@ dev = [
     "pytest>=7.0",
     "pytest-timeout>=2.1",
     "ruff>=0.4",
+    "hypothesis>=6.0",
 ]
 mesh3d = ["gmsh>=4.11"]
 
